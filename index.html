@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Генератор паролей и никнеймов</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  header {
+    margin-top: 40px;
+    margin-bottom: 20px;
+    font-size: 2.4rem;
+    font-weight: 600;
+    text-align: center;
+    user-select: none;
+    text-shadow: 0 0 8px rgba(0,0,0,0.2);
+  }
+
+  .container {
+    background: rgba(255 255 255 / 0.1);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    width: 320px;
+    padding: 24px 32px;
+    margin-bottom: 50px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  input[type="number"], select {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+    margin-bottom: 16px;
+  }
+
+  button {
+    background: #5a4de8;
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 1.1rem;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background: #4338ca;
+  }
+
+  .result-box {
+    margin-top: 16px;
+    background: rgba(255 255 255 / 0.15);
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-family: monospace;
+    font-size: 1.2rem;
+    user-select: all;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .copy-btn {
+    background: #4338ca;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: white;
+    font-size: 0.9rem;
+    margin-left: 12px;
+    transition: background-color 0.3s ease;
+  }
+  .copy-btn:hover {
+    background: #2e24a3;
+  }
+
+  nav {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  nav button {
+    background: transparent;
+    border: 2px solid white;
+    color: white;
+    font-weight: 600;
+    padding: 8px 16px;
+    margin: 0 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  nav button.active, nav button:hover {
+    background: white;
+    color: #5a4de8;
+    border-color: #5a4de8;
+  }
+
+  @media (max-width: 400px) {
+    .container {
+      width: 90vw;
+      padding: 20px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>Генератор паролей и никнеймов</header>
+
+<nav>
+  <button id="btn-password" class="active">Пароли</button>
+  <button id="btn-nickname">Никнеймы</button>
+</nav>
+
+<div id="password-section" class="container">
+  <label for="length">Длина пароля</label>
+  <input type="number" id="length" min="6" max="64" value="16" />
+  
+  <label for="chars">Включать символы</label>
+  <select id="chars">
+    <option value="letters" selected>Буквы (A-Z, a-z)</option>
+    <option value="lettersNumbers">Буквы + цифры (0-9)</option>
+    <option value="all">Буквы + цифры + символы (!@#$...)</option>
+  </select>
+
+  <button id="generate-password">Сгенерировать пароль</button>
+
+  <div id="password-result" class="result-box" style="display:none;">
+    <span id="password-text"></span>
+    <button class="copy-btn" id="copy-password">Копировать</button>
+  </div>
+</div>
+
+<div id="nickname-section" class="container" style="display:none;">
+  <button id="generate-nickname">Сгенерировать никнейм</button>
+
+  <div id="nickname-result" class="result-box" style="display:none;">
+    <span id="nickname-text"></span>
+    <button class="copy-btn" id="copy-nickname">Копировать</button>
+  </div>
+</div>
+
+<script>
+  // Переключение между разделами
+  const btnPassword = document.getElementById('btn-password');
+  const btnNickname = document.getElementById('btn-nickname');
+  const passwordSection = document.getElementById('password-section');
+  const nicknameSection = document.getElementById('nickname-section');
+
+  btnPassword.onclick = () => {
+    btnPassword.classList.add('active');
+    btnNickname.classList.remove('active');
+    passwordSection.style.display = 'block';
+    nicknameSection.style.display = 'none';
+  };
+
+  btnNickname.onclick = () => {
+    btnNickname.classList.add('active');
+    btnPassword.classList.remove('active');
+    nicknameSection.style.display = 'block';
+    passwordSection.style.display = 'none';
+  };
+
+  // Генератор паролей
+  const lengthInput = document.getElementById('length');
+  const charsSelect = document.getElementById('chars');
+  const generatePasswordBtn = document.getElementById('generate-password');
+  const passwordResult = document.getElementById('password-result');
+  const passwordText = document.getElementById('password-text');
+  const copyPasswordBtn = document.getElementById('copy-password');
+
+  function generatePassword(length, charset) {
+    let chars = '';
+    if (charset === 'letters') {
+      chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    } else if (charset === 'lettersNumbers') {
+      chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    } else {
+      chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{}|;:,.<>?';
+    }
+    let pass = '';
+    for (let i = 0; i < length; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return pass;
+  }
+
+  generatePasswordBtn.onclick = () => {
+    const length = parseInt(lengthInput.value, 10);
+    if (isNaN(length) || length < 6 || length > 64) {
+      alert('Длина пароля должна быть от 6 до 64 символов');
+      return;
+    }
+    const charset = charsSelect.value;
+    const pass = generatePassword(length, charset);
+    passwordText.textContent = pass;
+    passwordResult.style.display = 'flex';
+  };
+
+  copyPasswordBtn.onclick = () => {
+    navigator.clipboard.writeText(passwordText.textContent).then(() => {
+      alert('Пароль скопирован в буфер обмена!');
+    });
+  };
+
+  // Генератор никнеймов на английском
+  const adjectives = [
+    'Swift', 'Wise', 'Brave', 'Bright', 'Cheerful', 'Silent', 'Loud', 'Clever', 'Strong', 'Warm',
+    'Sunny', 'Green', 'Moonlit', 'Fiery', 'Fearless', 'Golden', 'Silver', 'Bold'
+  ];
+
+  const nouns = [
+    'Wolf', 'Tiger', 'Eagle', 'Fox', 'Bear', 'Dragon', 'Falcon', 'Cheetah', 'Hare', 'Leopard',
+    'Puma', 'Hawk', 'Serpent', 'Phoenix', 'Grizzly', 'Claw', 'Whirlwind', 'Light'
+  ];
+
+  const generateNicknameBtn = document.getElementById('generate-nickname');
+  const nicknameResult = document.getElementById('nickname-result');
+  const nicknameText = document.getElementById('nickname-text');
+  const copyNicknameBtn = document.getElementById('copy-nickname');
+
+  function generateNickname() {
+    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    return adj + noun;
+  }
+
+  generateNicknameBtn.onclick = () => {
+    const nickname = generateNickname();
+    nicknameText.textContent = nickname;
+    nicknameResult.style.display = 'flex';
+  };
+
+  copyNicknameBtn.onclick = () => {
+    navigator.clipboard.writeText(nicknameText.textContent).then(() => {
+      alert('Никнейм скопирован в буфер обмена!');
+    });
+  };
+</script>
+
+</body>
+</html>
